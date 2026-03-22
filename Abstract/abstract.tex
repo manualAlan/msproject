@@ -1,0 +1,28 @@
+
+\abstract
+% Title page for abstract is created by the Duke class; keep your content concise and complete.
+
+This master’s project develops and validates a real-time RF waveform control approach for trapped-ion
+quantum experiments using the ARTIQ control ecosystem and the Sinara Phaser module.
+The motivation is that high-fidelity quantum operations require deterministic timing and repeatable phase
+relationships across multiple RF and optical control pathways.
+
+The work reported here includes: (i) a concise systems-level framing of trapped-ion quantum control
+requirements and the role of RF-driven acousto-optic modulators (AOMs); (ii) a technical overview of ARTIQ’s
+host/kernel execution model and RTIO timing semantics; (iii) a specification- and architecture-grounded
+comparison between Phaser (AWG-class DAC + digital upconversion) and Urukul (DDS-class synthesizer);
+(iv) an implementation layer that supports multitone output, precision phase control, and an experiment-facing
+software interface; and (v) a measurement plan and validation templates for timing accuracy, phase stability,
+and spectral purity.
+
+% TODO: Replace placeholders below with your actual contributions and quantitative outcomes.
+Key contributions of this project are:
+1) [MULTITONE] A multitone generation workflow supporting [N] tones with independently set frequency,
+   amplitude, and phase within the Phaser oscillator model.
+2) [PHASE] A precision phase-control methodology compatible with ARTIQ RTIO determinism, including a
+   strategy to define phase reference times and manage updates without unintended discontinuities.
+3) [INTERFACE] An experiment interface design that abstracts device configuration, waveform scheduling,
+   and logging/metadata capture for reproducible experiments.
+
+% TODO: Add one strong “result sentence” per contribution once you have data:
+% Example: “We measure <X> ns timing repeatability and <Y> deg RMS inter-channel phase drift over <T>.”

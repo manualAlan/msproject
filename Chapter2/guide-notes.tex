@@ -1,0 +1,53 @@
+% =========================
+% chapters/02_quantum_background.tex
+% =========================
+\chapter{Quantum Control Background for Non-Specialists}
+\label{ch:quantum_background}
+
+\section{Minimal quantum computing vocabulary}
+A quantum bit (qubit) is a two-level system whose state can be written as
+$\lvert \psi \rangle = \alpha \lvert 0 \rangle + \beta \lvert 1 \rangle$, with complex amplitudes satisfying
+$|\alpha|^2 + |\beta|^2 = 1$. In the circuit model, computation proceeds via unitary gates and measurements.
+Universal quantum computation can be achieved with a suitable set of single-qubit gates and an entangling
+two-qubit gate (e.g., CNOT plus arbitrary single-qubit rotations).
+
+% TODO: add one citation to a clean excerpt or textbook chapter you’ll cite in BibTeX:
+% \cite{nielsen_chuang_ch4_excerpt}
+
+\section{Trapped-ion qubits and gate primitives}
+In trapped-ion platforms, qubits are encoded in internal electronic states of ions confined by electromagnetic
+fields. Laser-mediated interactions couple internal states to collective motional modes, enabling entangling
+operations.
+
+A widely used native entangling gate is the M{\o}lmer--S{\o}rensen (MS) gate, which uses bichromatic driving
+near motional sidebands to generate an effective spin--spin interaction while being relatively insensitive to
+thermal motional occupation compared to earlier schemes that required ground-state cooling.
+
+% Replace with the references in your BibTeX:
+% \cite{sorensen_molmer_1999_prl,haeffner_2008_review,bruzewicz_2019_apr}
+
+\begin{figure}[t]
+  \centering
+  \draftfigure[0.85\linewidth]{figures/trapped_ion_control_stack.pdf}
+  \caption{Placeholder overview figure: trapped-ion control stack showing qubit states, laser beams, AOMs,
+  and the real-time electronics layer. (Generate as a vector PDF.)}
+  \label{fig:ti_control_stack}
+\end{figure}
+
+\section{Why RF control matters: AOMs and optical control pathways}
+Acousto-optic modulators (AOMs) are commonly used to control laser intensity, switch beams, and impose
+frequency shifts by diffracting light from an RF-driven acoustic wave in a crystal. In many laboratory
+configurations, the RF drive amplitude sets optical diffraction efficiency (intensity control), while the RF
+frequency determines the optical frequency shift and beam deflection angle (in deflector use cases).
+
+Because quantum gates can require precise pulse timing, shaped envelopes, and stable phase relationships,
+the RF generation chain (synthesizer/AWG, amplifiers, AOM driver) becomes a control bottleneck if timing
+is non-deterministic or if phase is not repeatable.
+
+\section{Control requirements implied by gates}
+This thesis uses three control requirements as design drivers:
+(i) deterministic timing of updates and triggers relative to a shared experiment timeline,
+(ii) repeatable and characterizable phase relationships within and across channels,
+and (iii) sufficient waveform flexibility (multitone and pulse shaping) for modern gate and calibration sequences.
+
+% TODO: Replace with your experiment’s concrete requirements (e.g., pulse durations, detunings, number of tones).

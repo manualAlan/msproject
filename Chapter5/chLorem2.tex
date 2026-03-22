@@ -1,0 +1,72 @@
+% =========================
+% chapters/05_phaser_internals.tex
+% =========================
+\chapter{Phaser Internals: How NCO, PLL, and DAC Enable Real-Time Waveform Control}
+\label{ch:phaser_internals}
+
+\section{System-level block diagram}
+This section describes Phaser as a signal chain: FPGA-defined waveform generation and control, digital
+interpolation and mixing, high-speed DAC conversion, and (optionally) RF upconversion via an integrated IQ
+modulator. The key goal is to connect programmer-visible abstractions (oscillators, DUC frequency, amplitude
+and phase words) to underlying hardware blocks (NCO/PLL/DAC).
+
+\begin{figure}[t]
+  \centering
+  \draftfigure[0.98\linewidth]{figures/phaser_signal_chain.pdf}
+  \caption{Placeholder: Phaser signal chain diagram summarizing the FPGA, DAC, synchronization, and optional
+  upconversion path.}
+  \label{fig:phaser_signal_chain}
+\end{figure}
+
+\section{Numerically controlled oscillators in Phaser}
+Phaser exposes oscillator-style control in ARTIQ drivers. At the implementation level, the control maps to
+frequency tuning words (FTWs), phase offset words (POWs), and amplitude scale factors (ASFs).
+
+\subsection{NCO fundamentals (short, thesis-ready)}
+An NCO generates a discrete-time sinusoid by accumulating phase:
+\[
+\phi[n+1] = \phi[n] + \Delta \phi \pmod{2\pi},
+\]
+where $\Delta \phi$ is set by the FTW and the reference clock. The output sine/cosine is produced via lookup or
+CORDIC. In practice, finite word lengths set frequency resolution, and clock phase noise/jitter maps into output
+phase noise.
+
+% TODO: cite your chosen fundamental source in BibTeX:
+% \cite{adi_mt085_dds,tierney_1971_dds}
+
+\subsection{Phaser-specific frequency domains}
+ARTIQ’s Phaser multitone oscillator model documents a passband around the DUC (e.g., approximately
+$\pm 10$~MHz), while the DAC NCO mixer path supports a much wider passband (e.g., $\pm 400$~MHz, wrapping
+near $\pm 500$~MHz). The practical meaning is that “oscillator frequency” and “DAC NCO frequency” refer to
+distinct digital mixing stages and therefore have different constraints.
+
+% TODO: Insert a figure showing your chosen operating mode (classic vs MIQRO vs MTDDS) and where tones live.
+
+\section{PLL roles: clock multiplication and LO synthesis}
+Two PLL roles are relevant in Phaser-like architectures:
+(i) clock multiplication/jitter filtering for the DAC clock domain, and
+(ii) LO synthesis for the IQ upconverter (when used). PLL behavior sets the phase-noise floor and determines
+how reference clock quality propagates to the RF output.
+
+\subsection{DAC clock PLL}
+The DAC34H84 includes a clock-multiplying PLL and multi-device synchronization support; these features help
+build a coherent multi-channel DAC system provided the reference clock and sync strategy are well defined.
+
+\subsection{Upconverter PLL/VCO}
+In the upconverter variant, TRF372017 provides an integrated PLL/VCO and IQ modulator with LO frequency
+from 300~MHz to 4.8~GHz. This enables high-frequency RF outputs while keeping baseband generation digital.
+
+\section{DAC behavior: interpolation, mixing, and synchronization}
+The DAC stage maps digital samples into continuous-time waveforms; reconstruction filtering and interpolation
+settings define spectral images, bandwidth, and spurious behavior. Multi-device sync features are critical for
+repeatable channel alignment.
+
+\subsection{Interpolation and spectral images}
+% TODO: Insert a short explanation with one “spectrum sketch” figure and a real measurement later.
+
+\subsection{Multi-channel synchronization model}
+This thesis distinguishes:
+1) digital-time alignment (RTIO scheduling),
+2) digital-domain phase coherence (shared NCO reference time),
+3) DAC update synchronization (register update triggers),
+4) analog-domain alignment (cable delays, mixers, amplifiers).

@@ -1,0 +1,31 @@
+% =========================
+% chapters/08_discussion_future_conclusion.tex
+% =========================
+\chapter{Discussion, Challenges, Future Work, and Conclusion}
+\label{ch:discussion_future}
+
+\section{Discussion: what Phaser enables in practice}
+This thesis argues that Phaser’s architecture (DAC-based AWG platform with flexible digital mixing and
+gateware-defined modes) is well-matched to modern trapped-ion control demands such as shaped pulses and
+multitone waveforms, provided synchronization and timing semantics are handled carefully.
+
+% TODO: Add a short list of “worked well” items and connect to validation plots.
+
+\section{Challenges and lessons learned}
+This section should document practical realities:
+(i) initialization order and “hidden state” issues,
+(ii) sync triggers and update staging (why a config wasn’t applied when expected),
+(iii) calibration needs (IQ imbalance, cable delays),
+and (iv) software engineering constraints (kernel restrictions, host/kernel data movement).
+
+% TODO: convert your debugging narrative into 2–3 pages of crisp engineering lessons.
+
+\section{Future work}
+Future work should be prioritized by impact:
+1) automated calibration and compensation (IQ, amplitude flatness, phase offsets),
+2) closed-loop control using onboard ADC channels,
+3) scaling experiments: more channels, satellites, or DRTIO scenarios,
+4) more formal verification of timing/phase claims (continuous integration with waveform simulation).
+
+\section{Conclusion}
+Summarize (i) the system you built, (ii) what was validated, and (iii) how it improves experimental capability.

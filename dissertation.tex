@@ -1,0 +1,103 @@
+% =========================
+% main.tex (Duke ETD MS thesis skeleton)
+% =========================
+\documentclass[MS]{dukedissertation2025}
+% The official Overleaf template shows dukedissertation2025 and an MS option.
+% Keep your formatting close to the Graduate School template to reduce ETD format risk.
+
+% ---------- Packages ----------
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{pdflscape}
+
+% Code listings (avoids minted/shell-escape)
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Plotting (optional). If you prefer external plots, you can remove pgfplots.
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% References: you may switch to BibTeX if preferred.
+\usepackage[backend=biber,style=ieee,natbib=true]{biblatex}
+\addbibresource{Bibliography/References.bib}
+
+% Hyperlinks: Duke ETD guide warns against colored/underlined links; keep black.
+\usepackage[pdfusetitle,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=black]{hyperref}
+
+% ---------- Listings style ----------
+\lstdefinestyle{artiq}{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  stringstyle=\ttfamily,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+% Show a framed placeholder when a referenced figure file does not exist yet.
+\newcommand{\draftfigure}[2][0.9\linewidth]{%
+  \IfFileExists{#2}{%
+    \includegraphics[width=#1]{#2}%
+  }{%
+    \fbox{%
+      \parbox[c][2.1in][c]{#1}{%
+        \centering
+        Placeholder figure\\
+        \texttt{\detokenize{#2}}%
+      }%
+    }%
+  }%
+}
+
+% ---------- Metadata (replace placeholders) ----------
+\author{[Your Full Legal Name]}
+\title{[Your Thesis Title]}
+\supervisor{[Advisor Name]}
+\department{Electrical and Computer Engineering}
+\date{2026} % year only
+
+% Committee members: no titles (Dr., Ph.D., etc.), per ETD guide.
+\defensedate{[Month Day, 2026]}
+\member{[Committee Member 1]}
+\member{[Committee Member 2]}
+\member{[Committee Member 3]}
+
+% Optional copyright text
+\copyrighttext{All rights reserved.}
+
+% ---------- Document ----------
+\begin{document}
+\maketitle
+
+% Abstract: required (and Duke requires a distinct abstract title page).
+\include{Abstract/abstract}
+
+\tableofcontents
+\listoftables
+\listoffigures
+
+% ---------------- Main chapters ----------------
+\include{Chapter1/introduction}
+\include{Chapter2/guide-notes}
+\include{Chapter3/chRegularLook}
+\include{Chapter4/chLorem}
+\include{Chapter5/chLorem2}
+\include{Chapter6/c6}
+\include{Chapter7/c7}
+\include{Chapter8/c8}
+
+% ---------------- Bibliography ----------------
+\printbibliography
+
+\end{document}

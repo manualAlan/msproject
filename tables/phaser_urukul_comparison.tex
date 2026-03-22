@@ -1,0 +1,65 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabularx}{\linewidth}{lXX}
+\toprule
+Attribute & Urukul (4410/4412 DDS) & Phaser (4624 AWG) \\
+\midrule
+Primary synthesis model
+& DDS (AD9910 or AD9912) with digitally controlled frequency/phase/amplitude
+& AWG-class DAC platform with gateware-defined modes (classic, MIQRO, etc.) \\
+
+Analog output channels (effective)
+& 4 RF channels, each with DDS + attenuator + RF switch
+& 4 DAC channels (baseband variant); upconverter variant routes DAC pairs into 2 IQ upconverters \\
+
+Sample clock / conversion rate
+& 1~GS/s DDS
+& 1.25~GS/s 16-bit DAC \\
+
+Output frequency / RF range
+& $\sim$1~Hz to 400~MHz (RF output spec)
+& Baseband: DAC/NCO-dependent; Upconverter LO: 0.3--4.8~GHz IQ modulator \\
+
+Frequency resolution (device-level)
+& AD9910: 0.25~Hz; AD9912: 8~\si{\micro\hertz}
+& 32-bit tuning words in relevant NCO paths (exact effective resolution depends on clocking) \\
+
+Phase control resolution (device-level)
+& 16-bit (AD9910) or 14-bit (AD9912) phase offset
+& 16-bit phase offset word in Phaser multitone oscillator paths; additional DAC NCO phase offset exists \\
+
+Amplitude control
+& Digital amplitude (14-bit on AD9910) + 0.5~dB step attenuator (0 to -31.5~dB)
+& 15-bit amplitude word in multitone path + 0.5~dB step attenuator (0 to -31.5~dB) \\
+
+Nominal output power
+& $\sim$10~dBm nominal (datasheet value)
+& Example output power depends on variant and IF/LO; see datasheet table \\
+
+Update timing granularity
+& IO\_UPDATE temporal resolution documented as 4~ns (device interface layer)
+& RTIO-driven updates; practical granularity depends on gateware mode and sync triggers \\
+
+Synchronization mechanisms
+& SYNC tree + IO\_UPDATE alignment; double-EEM enables 1~ns RF switch control
+& DAC multi-device sync (DAC-level), shared clocking; DAC/DUC sync functions in driver \\
+
+Waveform flexibility
+& Best for clean tones, phase-coherent steps, DDS modulations
+& Best for shaped waveforms, multi-tone composites, digitally upconverted outputs \\
+
+Typical ``end-to-end'' latency (you measure)
+& \textbf{TODO: Measure} (kernel event $\rightarrow$ RF output settling)
+& \textbf{TODO: Measure} (kernel event $\rightarrow$ RF output settling) \\
+
+Best-fit experiment use cases
+& Few-tone AOMs, microwave control, frequency scans, phase-coherent switching
+& Shaped gates, multi-tone AOM/AOD control, complex modulation, calibration waveforms \\
+
+\bottomrule
+\end{tabularx}
+\caption{Phaser vs Urukul comparison for trapped-ion RF/AOM control. Replace measurement placeholders with
+your lab results.}
+\label{tab:phaser_vs_urukul}
+\end{table}

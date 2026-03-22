@@ -1,0 +1,38 @@
+\chapter{Introduction}
+
+\section{Motivation: deterministic phase-coherent control in trapped-ion experiments}
+Trapped-ion quantum information processing depends on coherent manipulations of qubit states using
+electromagnetic control fields engineered in time, frequency, amplitude, and phase.
+In practice, high-fidelity operations require (i) deterministic timing to align control actions to the experiment
+timeline, and (ii) stable phase relationships between channels that drive optical modulators and microwave/RF
+hardware.
+
+This thesis focuses on the signal-generation and timing-control layer required to support such experiments,
+with emphasis on ARTIQ’s real-time execution model and the Phaser AWG module.
+
+\section{Contributions}
+This master’s project contributes an implementation and validation framework for Phaser-based RF control.
+Unlike a purely descriptive hardware report, the emphasis is on the system-level mapping from experimental
+requirements to timing semantics, device configuration, and validation.
+
+% TODO: Replace the bracketed items with your specifics:
+The contributions are:
+\begin{itemize}[leftmargin=*]
+  \item A multitone output capability for Phaser suitable for [AOM/AOD] tasks requiring multiple simultaneous
+        frequency components.
+  \item A precision phase-control approach that defines a phase reference, handles phase updates, and outlines
+        calibration of deterministic offsets.
+  \item An experiment-facing interface layer that reduces the burden of device configuration and improves
+        reproducibility through structured metadata and validation hooks.
+\end{itemize}
+
+\section{Document structure}
+Chapter~\ref{ch:quantum_background} provides a concise background on trapped-ion quantum computing and RF-driven
+optical modulators. Chapter~\ref{ch:artiq_architecture} summarizes ARTIQ’s host/kernel model and RTIO timing.
+Chapter~\ref{ch:phaser_vs_urukul} compares Phaser and Urukul and discusses DDS vs AWG tradeoffs.
+Chapter~\ref{ch:phaser_internals} details Phaser internal blocks (NCO/PLL/DAC and sync).
+Chapters~\ref{ch:system_design}--\ref{ch:results_validation} describe implementation and validation templates,
+followed by discussion and future work.
+
+% Labels
+\label{ch:introduction}

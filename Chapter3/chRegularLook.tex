@@ -1,0 +1,55 @@
+% =========================
+% chapters/03_artiq_architecture.tex
+% =========================
+\chapter{ARTIQ Architecture and Why It Matters for Quantum Control}
+\label{ch:artiq_architecture}
+
+\section{Host vs kernel execution model}
+ARTIQ experiments are written in a Python-based environment but are split into (i) host-side code running on
+a conventional computer and (ii) kernel code compiled and executed on the ARTIQ core device.
+The kernel is designed for time-critical control and is scheduled against a hardware-defined timeline.
+
+\subsection{RTIO as the determinism mechanism}
+A core design point is that kernels do not drive real-time gateware “directly”; instead, the CPU submits
+timestamped events into FIFO buffers while gateware executes them with high timing precision. This supports
+deterministic timing while allowing a high-level programming model.
+
+\begin{figure}[t]
+  \centering
+  \draftfigure[0.95\linewidth]{figures/artiq_rtio_fifos.pdf}
+  \caption{Placeholder diagram: RTIO FIFO buffering model (kernel/event submission) and timing execution in
+  gateware.}
+  \label{fig:rtio_fifo_model}
+\end{figure}
+
+\section{Time model: \texttt{now\_mu}, coarse vs fine clocks, and reference period}
+ARTIQ uses machine units (\texttt{mu}) as the fundamental kernel time step.
+Documentation distinguishes (i) fine timestamps and (ii) the coarse RTIO clock that is typically set by core
+clocking settings; a common configuration uses a 125~MHz coarse RTIO clock.
+With clock multiplication and SERDES-based PHYs, the reference period may be 1~ns, e.g., 125~MHz with an
+8$\times$ multiplier.
+
+% TODO: Insert your system’s exact RTIO clocking mode and measured ref_period.
+\begin{table}[t]
+  \centering
+  \begin{tabularx}{0.95\linewidth}{lX}
+    \toprule
+    Term & Working definition in this thesis \\
+    \midrule
+    \texttt{now\_mu()} & Kernel timeline cursor (scheduled time for events). \\
+    \texttt{rtio\_counter\_mu()} & Wall-clock time counter in RTIO domain (execution progress). \\
+    Coarse RTIO clock & Base RTIO clock (often 125~MHz) used for coarse timestamps. \\
+    Fine timestamps & Higher-resolution timestamps used with SERDES/multiplication PHYs. \\
+    Slack & Difference between \texttt{now\_mu} and the wall clock; negative slack implies underflow risk. \\
+    \bottomrule
+  \end{tabularx}
+  \caption{Key ARTIQ/RTIO timing terms used throughout this thesis.}
+  \label{tab:artiq_timing_terms}
+\end{table}
+
+\section{Implications for RF/laser control}
+For RF waveform generation devices, determinism is only meaningful if:
+(i) device updates are scheduled at known timestamps,
+(ii) hardware state changes are applied on predictable boundaries,
+and (iii) phase reference times are well-defined within the device update model.
+These considerations motivate the later discussion of Urukul IO\_UPDATE alignment and Phaser DAC sync.

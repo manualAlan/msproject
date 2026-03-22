@@ -1,0 +1,33 @@
+% =========================
+% chapters/04_phaser_vs_urukul.tex
+% =========================
+\chapter{Choosing the RF Engine: Phaser vs Urukul, and DDS vs AWG}
+\label{ch:phaser_vs_urukul}
+
+\section{Scope of comparison}
+Both Urukul and Phaser integrate into ARTIQ/Sinara crates, but they represent distinct signal-generation
+philosophies: DDS-centric synthesizer (Urukul) versus AWG-class DAC with interpolation, mixing, and
+gateware-defined waveform modes (Phaser). This chapter compares them along dimensions that matter for
+trapped-ion AOM and gate control: phase control, update timing, bandwidth, synchronization pathways, and
+waveform flexibility.
+
+\section{Specification-driven comparison}
+\input{tables/phaser_urukul_comparison}
+
+\section{Interpretation: when Phaser is “better” and when Urukul is “better”}
+Urukul excels when the experiment primarily needs agile sinusoidal tones with extremely fine frequency
+resolution and well-characterized, phase-coherent updates (especially with careful IO\_UPDATE alignment and
+SYNC tree configuration, when used). Phaser excels when the experiment needs (i) wideband or shaped
+waveforms, (ii) simultaneous multitone generation, or (iii) multi-stage digital mixing/interpolation workflows
+that more closely resemble a modern transmitter chain.
+
+\section{DDS vs AWG: a control-systems viewpoint}
+In a DDS, a phase accumulator and lookup/cordic stage generate a sinusoid referenced to a high-quality
+clock, offering fine frequency and phase programmability with predictable spurious behavior.
+In an AWG, user-defined samples are played from memory at a set sample rate; AWGs are therefore highly
+flexible but require careful attention to sample clocks, reconstruction filters, and memory/sequence
+constraints. Many commercial instruments explicitly distinguish these paradigms and use cases.
+
+For trapped-ion control, the practical distinction is this:
+\emph{DDS is ideal for a few clean tones with tight frequency control; AWG-class generation is ideal for
+pulse shaping, modulation, and many-tone composite waveforms.}
