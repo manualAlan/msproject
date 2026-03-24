@@ -1,53 +1,17 @@
-% =========================
-% chapters/02_quantum_background.tex
-% =========================
-\chapter{Quantum Control Background for Non-Specialists}
-\label{ch:quantum_background}
+\chapter{ARTIQ Experimental Control and the Choice Between Urukul and Phaser}
 
-\section{Minimal quantum computing vocabulary}
-A quantum bit (qubit) is a two-level system whose state can be written as
-$\lvert \psi \rangle = \alpha \lvert 0 \rangle + \beta \lvert 1 \rangle$, with complex amplitudes satisfying
-$|\alpha|^2 + |\beta|^2 = 1$. In the circuit model, computation proceeds via unitary gates and measurements.
-Universal quantum computation can be achieved with a suitable set of single-qubit gates and an entangling
-two-qubit gate (e.g., CNOT plus arbitrary single-qubit rotations).
+A trapped-ion experiment is not only limited by the ion trap or the laser system. It is also limited by how precisely the control hardware can deliver the required timing, frequency, phase, and amplitude updates. In practice, many experimental sequences require repeated execution of the same pulse pattern with small parameter changes, while keeping the timing relationship between channels fixed from shot to shot. This is one of the main reasons ARTIQ is useful in quantum experiments. The ARTIQ system separates host-side experiment logic from time-critical device control and schedules hardware actions on a real-time timeline through RTIO. In this way, experiment code can still be written at a high level, while the actual device actions are executed deterministically by the core hardware \cite{artiq_rtio, artiq_drivers}.
 
-% TODO: add one citation to a clean excerpt or textbook chapter you’ll cite in BibTeX:
-% \cite{nielsen_chuang_ch4_excerpt}
+This deterministic timing model is especially important in quantum control. A pulse sequence is usually not just a list of commands. It is a sequence of events whose relative timing matters at the level of the physical process being driven. If the timing of an RF update is inconsistent, or if different channels are not aligned properly, then the optical or microwave control seen by the ion is no longer the intended one. ARTIQ addresses this problem by giving the user explicit control over the experiment timeline rather than relying on the timing behavior of a general-purpose operating system \cite{artiq_rtio}.
 
-\section{Trapped-ion qubits and gate primitives}
-In trapped-ion platforms, qubits are encoded in internal electronic states of ions confined by electromagnetic
-fields. Laser-mediated interactions couple internal states to collective motional modes, enabling entangling
-operations.
+Within the ARTIQ and Sinara ecosystem, Urukul and Phaser represent two different approaches to RF generation. Urukul is the simpler and more established option. It is a four-channel DDS-based RF synthesizer and is well suited to experiments that mainly need stable tones, phase-controllable outputs, and straightforward on/off switching for devices such as AOMs. M-Labs describes Urukul as a four-channel DDS source with sub-Hz frequency resolution, controlled phase steps, and accurate amplitude control \cite{urukul_datasheet, sinara_core}. In a typical trapped-ion experiment, this matches a common use case well: one tone per AOM channel, with frequency selection, amplitude setting, and fast gating.
 
-A widely used native entangling gate is the M{\o}lmer--S{\o}rensen (MS) gate, which uses bichromatic driving
-near motional sidebands to generate an effective spin--spin interaction while being relatively insensitive to
-thermal motional occupation compared to earlier schemes that required ground-state cooling.
+For many experiments, this simplicity is an advantage rather than a limitation. Urukul is comparatively mature, easier to understand, and easier to integrate into standard laboratory control sequences. If the goal is to drive several AOMs with mostly fixed-frequency signals and occasional frequency or phase updates, then four independent RF outputs are often more useful than a more complicated waveform engine. In that sense, Urukul fits the traditional style of quantum optics control, where each channel corresponds to one relatively simple optical control path \cite{sinara_core, artiq_ad9910}.
 
-% Replace with the references in your BibTeX:
-% \cite{sorensen_molmer_1999_prl,haeffner_2008_review,bruzewicz_2019_apr}
+Phaser is different in both architecture and intended use. In the ARTIQ classic driver model, Phaser is not best understood as just another DDS board with better specifications. It is closer to a waveform-oriented RF generation platform. The ARTIQ Phaser driver describes each RF output stream as supporting five independent numerically controlled IQ oscillators in the classic configuration, which are added together before interpolation and digital upconversion \cite{artiq_phaser_classic, artiq_phaser_legacy}. In practical terms, this means that one effective output can carry a superposition of several tones, rather than just one tone with amplitude and phase control. The current M-Labs Phaser datasheet also emphasizes that the hardware is a flexible signal-generation platform with multiple gateware configurations for different use cases, rather than a fixed-function RF synthesizer \cite{phaser_datasheet}.
 
-\begin{figure}[t]
-  \centering
-  \draftfigure[0.85\linewidth]{figures/trapped_ion_control_stack.pdf}
-  \caption{Placeholder overview figure: trapped-ion control stack showing qubit states, laser beams, AOMs,
-  and the real-time electronics layer. (Generate as a vector PDF.)}
-  \label{fig:ti_control_stack}
-\end{figure}
+This difference matters directly for quantum experiments. In a simple AOM application, one RF tone may be enough. However, more advanced experiments often need RF waveforms that are not well described as a single frequency being switched on and off. Examples include chirped frequency sweeps, shaped pulse envelopes, controlled phase evolution, and multitone signals used to address more than one spectral component at once. These are the situations in which Phaser becomes more useful than Urukul. Even though the number of effective RF outputs is smaller, each output is much richer. In exchange for giving up the four simple channels of Urukul, the user gains the ability to synthesize more structured control signals on each channel \cite{artiq_phaser_classic, phaser_datasheet}.
 
-\section{Why RF control matters: AOMs and optical control pathways}
-Acousto-optic modulators (AOMs) are commonly used to control laser intensity, switch beams, and impose
-frequency shifts by diffracting light from an RF-driven acoustic wave in a crystal. In many laboratory
-configurations, the RF drive amplitude sets optical diffraction efficiency (intensity control), while the RF
-frequency determines the optical frequency shift and beam deflection angle (in deflector use cases).
+This is also the practical meaning of the AWG versus DDS distinction in this context. A DDS-based board such as Urukul is optimized for generating precise sinusoidal outputs with very good frequency control and relatively simple parameter updates. That makes it an excellent choice when the experiment mainly needs stable carrier tones and deterministic switching. A waveform-oriented platform such as Phaser is more suitable when the experiment needs signal structure in time or frequency, rather than only a cleaner or faster single tone. Strictly speaking, Phaser is not a fully general laboratory arbitrary waveform generator in the broadest sense, since its output is still shaped by its internal DSP architecture and gateware mode. But for the purposes of quantum control, it behaves much more like an AWG-class device than a standard DDS board, because it allows the user to build composite and time-varying RF signals in a way that is much harder to realize on Urukul \cite{artiq_phaser_classic, phaser_datasheet, dac34h84_datasheet}.
 
-Because quantum gates can require precise pulse timing, shaped envelopes, and stable phase relationships,
-the RF generation chain (synthesizer/AWG, amplifiers, AOM driver) becomes a control bottleneck if timing
-is non-deterministic or if phase is not repeatable.
-
-\section{Control requirements implied by gates}
-This thesis uses three control requirements as design drivers:
-(i) deterministic timing of updates and triggers relative to a shared experiment timeline,
-(ii) repeatable and characterizable phase relationships within and across channels,
-and (iii) sufficient waveform flexibility (multitone and pulse shaping) for modern gate and calibration sequences.
-
-% TODO: Replace with your experiment’s concrete requirements (e.g., pulse durations, detunings, number of tones).
+For trapped-ion quantum experiments, the choice between the two boards should therefore be made based on the control task rather than by asking which one is universally better. Urukul is better suited to the simpler and more common case: several independent RF outputs, each carrying one well-controlled tone that can be gated or updated reliably. Phaser is better suited to the more demanding case: fewer outputs, but each output capable of carrying several tones or more complex waveform structure. In this sense, Phaser extends the kinds of quantum-control experiments that can be implemented conveniently inside the ARTIQ framework, especially when waveform complexity itself becomes part of the experimental method rather than only a detail of the hardware implementation.

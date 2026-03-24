@@ -1,55 +1,109 @@
-% =========================
-% chapters/03_artiq_architecture.tex
-% =========================
-\chapter{ARTIQ Architecture and Why It Matters for Quantum Control}
-\label{ch:artiq_architecture}
+\section{Phaser Internal Architecture and Software Interface}
 
-\section{Host vs kernel execution model}
-ARTIQ experiments are written in a Python-based environment but are split into (i) host-side code running on
-a conventional computer and (ii) kernel code compiled and executed on the ARTIQ core device.
-The kernel is designed for time-critical control and is scheduled against a hardware-defined timeline.
+Phaser is useful in quantum experiments because it does not treat RF generation as a single-tone problem. Instead, it implements a layered signal path in which several digital tones can be generated, combined, frequency-shifted, phase-adjusted, converted to analog, and, in the upconverter variant, translated again to a higher RF band. In the standard ARTIQ base mode, the core device produces two IQ data streams at 25~MS/s, and each stream contains five independent oscillators with 32-bit frequency control, 16-bit phase control, and 15-bit amplitude control \cite{artiq_phaser_module, artiq_coredrivers}. These oscillators are added together before later interpolation and upconversion stages. This is the main reason Phaser is useful for waveform-rich control: one output can carry a structured multitone signal rather than only one sinusoidal carrier.
 
-\subsection{RTIO as the determinism mechanism}
-A core design point is that kernels do not drive real-time gateware “directly”; instead, the CPU submits
-timestamped events into FIFO buffers while gateware executes them with high timing precision. This supports
-deterministic timing while allowing a high-level programming model.
+\subsection{Digital oscillators and multitone synthesis}
 
-\begin{figure}[t]
-  \centering
-  \draftfigure[0.95\linewidth]{figures/artiq_rtio_fifos.pdf}
-  \caption{Placeholder diagram: RTIO FIFO buffering model (kernel/event submission) and timing execution in
-  gateware.}
-  \label{fig:rtio_fifo_model}
-\end{figure}
+The first stage is the oscillator bank inside each \texttt{PhaserChannel}. In ARTIQ, each \texttt{PhaserOscillator} provides the methods \texttt{set\_frequency()} and \texttt{set\_amplitude\_phase()} \cite{artiq_coredrivers}. The documented passband for the oscillator frequency in base mode is from \(-10\)~MHz to \(+10\)~MHz, with wrapping at \(\pm 12.5\)~MHz \cite{artiq_coredrivers}. The phase argument is given in turns, and the amplitude is specified in units of full scale \cite{artiq_coredrivers}. This is a natural software model for quantum control. One oscillator can be used for a simple AOM tone, while several oscillators can be summed to generate bichromatic or multitone signals with fixed phase relationships.
 
-\section{Time model: \texttt{now\_mu}, coarse vs fine clocks, and reference period}
-ARTIQ uses machine units (\texttt{mu}) as the fundamental kernel time step.
-Documentation distinguishes (i) fine timestamps and (ii) the coarse RTIO clock that is typically set by core
-clocking settings; a common configuration uses a 125~MHz coarse RTIO clock.
-With clock multiplication and SERDES-based PHYs, the reference period may be 1~ns, e.g., 125~MHz with an
-8$\times$ multiplier.
+Conceptually, each oscillator is a numerically controlled oscillator (NCO). An NCO advances a digital phase accumulator by a programmable increment every sample cycle, and the accumulated phase is then mapped to sinusoidal I and Q samples. Because frequency is set by the phase increment and phase offset is controlled separately, digital oscillators give fine and repeatable control of frequency and phase \cite{adi_mt085}. This is important in quantum experiments because the relative phase between tones often matters as much as the nominal frequency.
 
-% TODO: Insert your system’s exact RTIO clocking mode and measured ref_period.
-\begin{table}[t]
-  \centering
-  \begin{tabularx}{0.95\linewidth}{lX}
-    \toprule
-    Term & Working definition in this thesis \\
-    \midrule
-    \texttt{now\_mu()} & Kernel timeline cursor (scheduled time for events). \\
-    \texttt{rtio\_counter\_mu()} & Wall-clock time counter in RTIO domain (execution progress). \\
-    Coarse RTIO clock & Base RTIO clock (often 125~MHz) used for coarse timestamps. \\
-    Fine timestamps & Higher-resolution timestamps used with SERDES/multiplication PHYs. \\
-    Slack & Difference between \texttt{now\_mu} and the wall clock; negative slack implies underflow risk. \\
-    \bottomrule
-  \end{tabularx}
-  \caption{Key ARTIQ/RTIO timing terms used throughout this thesis.}
-  \label{tab:artiq_timing_terms}
-\end{table}
+The oscillator stage also imposes an important practical constraint. Since all five oscillators on one channel are summed before the interpolation and converter stages, the total signal must remain within the available digital range. In practice, this means that the sum of oscillator amplitudes on one channel must stay below full scale. Otherwise the digital waveform will clip and the analog output will be distorted. For multitone experiments, this is one of the main tradeoffs of Phaser: it provides much more freedom than a simple DDS channel, but it also requires more deliberate amplitude budgeting.
 
-\section{Implications for RF/laser control}
-For RF waveform generation devices, determinism is only meaningful if:
-(i) device updates are scheduled at known timestamps,
-(ii) hardware state changes are applied on predictable boundaries,
-and (iii) phase reference times are well-defined within the device update model.
-These considerations motivate the later discussion of Urukul IO\_UPDATE alignment and Phaser DAC sync.
+\subsection{Interpolation and digital upconversion}
+
+After the oscillator bank, the signal enters the interpolation and digital upconverter path. The ARTIQ Phaser module documentation states that, in base mode, the data streams are buffered in the FPGA and interpolated from 25~MS/s to 500~MS/s, followed by a 500~MS/s digital upconverter with adjustable frequency and phase \cite{artiq_phaser_module}. The interpolation passband is documented as 20~MHz wide, with stopband attenuation better than 75~dB beyond 15~MHz offset and better than 90~dB beyond 30~MHz offset \cite{artiq_phaser_module}. This stage is important because it allows the user to separate two different tasks. The oscillators define the internal tone structure, while the DUC shifts the whole composite signal to a desired digital center frequency.
+
+At the software level, this stage is controlled through channel-level methods such as \texttt{set\_duc\_cfg()}, \texttt{set\_duc\_frequency()}, and \texttt{set\_duc\_phase()} \cite{artiq_coredrivers}. The documentation gives the DUC frequency passband as \(-200\)~MHz to \(+200\)~MHz, with wrapping at \(\pm 250\)~MHz \cite{artiq_coredrivers}. The staged DUC settings are applied with \texttt{duc\_stb()}, which transfers the DUC configuration from staging registers into the active path \cite{artiq_coredrivers}. In experimental terms, this means that the user can define a waveform in a local low-frequency frame and then move the whole signal band without changing the relative structure between its tones.
+
+\subsection{DAC stage and converter-side processing}
+
+The main DAC on Phaser is the TI DAC34H84. According to the TI datasheet, it is a quad-channel, 16-bit, 1.25~GSPS interpolating DAC with selectable \(2\times\), \(4\times\), \(8\times\), and \(16\times\) interpolation, independent complex mixers with 32-bit NCOs, digital I/Q correction, multi-DAC synchronization, and a clock-multiplying PLL \cite{dac34h84}. In Phaser, this DAC is not just a final digital-to-analog converter. It is part of the signal-processing chain.
+
+This matters experimentally because the DAC stage includes functions that directly affect RF quality. The interpolation filters suppress images, the converter-side mixers allow additional carrier placement, and the digital quadrature correction compensates gain, phase, offset, and group-delay mismatch between I and Q paths \cite{dac34h84}. If these effects are not managed well, unwanted sidebands and carrier leakage appear at the analog output. In a quantum experiment, those imperfections can directly reduce the quality of the AOM or RF drive applied to the system.
+
+At the ARTIQ level, this converter-side functionality appears through methods such as \texttt{set\_nco\_frequency()} and \texttt{set\_nco\_phase()} on \texttt{PhaserChannel} \cite{artiq_coredrivers}. The documentation states that the DAC-side NCO frequency is staged first and that its use requires the DAC mixer and NCO to be enabled through the \texttt{dac} configuration dictionary \cite{artiq_coredrivers}. The documented passband for this DAC-side NCO is \(-400\)~MHz to \(+400\)~MHz, with wrapping at \(\pm 500\)~MHz \cite{artiq_coredrivers}. This is different from the five oscillator NCOs discussed earlier. The oscillator bank defines the internal multitone waveform, while the DAC-side NCO belongs to the converter path and provides another frequency-translation layer after earlier interpolation and DUC processing.
+
+\subsection{PLL and analog upconversion}
+
+Clocking and upconversion are the next important layers. The DAC34H84 includes a high-performance low-jitter clock multiplier PLL \cite{dac34h84}. In the upconverter variant of Phaser, each IQ pair then feeds a TI TRF372017 quadrature modulator with integrated PLL/VCO. The Phaser datasheet describes this variant as using dual 0.3~GHz to 4.8~GHz IQ mixers with internal PLLs \cite{phaser_datasheet}. TI describes the TRF372017 itself as a direct upconversion device with integrated IQ modulator and integer/fractional PLL/VCO, with LO frequency from 300~MHz to 4.8~GHz and internal frequency dividers \cite{trf372017}.
+
+The roles of the two PLLs are different. The DAC-side PLL supports stable high-speed sample conversion and mixing inside the digital-to-analog stage. The TRF372017 PLL/VCO generates the local oscillator used for analog quadrature upconversion \cite{dac34h84, trf372017}. In other words, the oscillator bank and DUC define the waveform, the DAC realizes it as an analog I/Q signal, and the TRF stage places that signal in the final RF output band. This is the full reason Phaser can generate waveform-rich RF outputs that are more flexible than the outputs of a conventional single-tone DDS channel.
+
+The public ARTIQ TRF driver exposes this stage through higher-level methods such as \texttt{set\_mixer\_frequency()}, \texttt{enable\_lo\_output()}, \texttt{enable\_mixer\_rf\_output()}, and \texttt{calibrate\_vco()} \cite{artiq_trf_module}. The same driver also includes an internal PLL calculation routine that solves for parameters such as \(r\_div\), \(n\_int\), \(n\_frac\), \(pll\_div\_sel\), and \(tx\_div\_sel\) when the desired mixer frequency is set \cite{artiq_trf_module}. This is important from a software-design viewpoint: ARTIQ exposes the important physical behavior of the upconverter without forcing experiment code to manage every register manually.
+
+\subsection{Deterministic timing and frame alignment}
+
+For quantum experiments, flexibility alone is not enough. The updates must also occur at predictable times. ARTIQ provides this through its RTIO model, where kernels schedule hardware events on a timeline instead of relying on ordinary software timing \cite{artiq_rtio}. The Phaser documentation states that the latency from RTIO events that set oscillator or DUC parameters to the DAC outputs is deterministic, and that this enables deterministic absolute phase relative to other RTIO events \cite{artiq_phaser_module}. The driver therefore provides \texttt{measure\_frame\_timestamp()} and \texttt{get\_next\_frame\_mu()} specifically to align register updates to FastLink frame boundaries \cite{artiq_coredrivers, artiq_phaser_module}. The core driver reference also states that register updates scheduled at the timestamp returned by \texttt{get\_next\_frame\_mu()} and at later multiples of the frame period will have deterministic latency to output \cite{artiq_coredrivers}.
+
+This point is especially important when absolute phase matters. The core driver reference notes that latencies between oscillators within one channel, and between oscillator parameters such as amplitude/phase and frequency, are deterministic with respect to the 25~MS/s sample clock but are not matched \cite{artiq_coredrivers}. In practice, this means that updates that must preserve a well-defined phase relationship should be scheduled carefully, typically on a common frame boundary. Phaser is therefore not just a waveform generator. It is a waveform generator whose timing can be integrated into the RTIO timeline.
+
+\subsection{Software structure of \texttt{phaser.py}}
+
+The public ARTIQ software for Phaser is organized around three main classes \cite{artiq_phaser_module, artiq_coredrivers}:
+
+\begin{itemize}
+    \item \textbf{\texttt{Phaser}} represents the board as a whole. It handles initialization, status checking, DAC access, TRF access, frame timing, and general low-level control.
+    \item \textbf{\texttt{PhaserChannel}} represents one RF signal path. It contains the channel-level DUC controls, DAC-side controls, attenuator control, and access to the analog upconverter path.
+    \item \textbf{\texttt{PhaserOscillator}} represents one tone in the multitone synthesis stage and provides the per-tone frequency, phase, and amplitude control.
+\end{itemize}
+
+This class structure reflects the hardware architecture closely. Board-level actions belong to \texttt{Phaser}, channel-level RF-path actions belong to \texttt{PhaserChannel}, and per-tone waveform construction belongs to \texttt{PhaserOscillator}.
+
+\subsection{Key software functions}
+
+For thesis purposes, the most useful way to organize the software functions is by role rather than by source-code order.
+
+\paragraph{Board-level functions.}
+The most important board-level methods are:
+\begin{itemize}
+    \item \texttt{init()}: verifies board and chip presence, resets components, performs communication and configuration tests, and establishes initial conditions \cite{artiq_coredrivers}.
+    \item \texttt{measure\_frame\_timestamp()}: measures a FastLink frame timestamp and stores it as a reference for aligned updates \cite{artiq_coredrivers}.
+    \item \texttt{get\_next\_frame\_mu()}: returns the next frame-aligned timestamp for deterministic register updates \cite{artiq_coredrivers}.
+    \item \texttt{get\_sta()} and \texttt{get\_dac\_alarms()}: read hardware status and DAC alarm flags \cite{artiq_coredrivers}.
+\end{itemize}
+
+\paragraph{Channel-level functions.}
+The main \texttt{PhaserChannel} methods are:
+\begin{itemize}
+    \item \texttt{set\_att()} and \texttt{set\_att\_mu()}: set the digital step attenuator for one channel \cite{artiq_coredrivers}.
+    \item \texttt{set\_duc\_cfg()}: configures the DUC and interpolator behavior, including persistent clear, one-shot clear, and test-data selection \cite{artiq_coredrivers}.
+    \item \texttt{set\_duc\_frequency()} and \texttt{set\_duc\_phase()}: control the channel-level digital upconverter \cite{artiq_coredrivers}.
+    \item \texttt{set\_nco\_frequency()} and \texttt{set\_nco\_phase()}: control the DAC-side NCO and mixer stage, with stage/apply behavior determined by the DAC synchronization configuration \cite{artiq_coredrivers}.
+\end{itemize}
+
+\paragraph{Per-oscillator functions.}
+Each \texttt{PhaserOscillator} mainly uses:
+\begin{itemize}
+    \item \texttt{set\_frequency()}: sets the oscillator frequency in the baseband passband \cite{artiq_coredrivers}.
+    \item \texttt{set\_amplitude\_phase()}: sets amplitude and phase for that tone, with optional phase-accumulator clear \cite{artiq_coredrivers}.
+\end{itemize}
+
+\paragraph{Upconverter functions.}
+For the TRF372017 stage, the important high-level methods are:
+\begin{itemize}
+    \item \texttt{set\_mixer\_frequency()}: computes PLL settings and programs the desired analog mixer frequency \cite{artiq_trf_module}.
+    \item \texttt{calibrate\_vco()}: performs VCO calibration and advances the timeline by the required calibration duration \cite{artiq_trf_module}.
+    \item \texttt{enable\_lo\_output()} and \texttt{enable\_mixer\_rf\_output()}: control the LO and RF output paths \cite{artiq_trf_module}.
+\end{itemize}
+
+\subsection{Local \texttt{device\_db} TRF setup fields}
+
+In our local setup, the TRF-related settings are often organized in the \texttt{device\_db} dictionaries for \texttt{trf0} and \texttt{trf1}. This is a local configuration convention, not the public high-level ARTIQ API, but it is useful because it groups the upconverter parameters by function. In this view, the configuration fields can be understood as follows:
+
+\paragraph{PLL and reference path.}
+Fields such as \texttt{rdiv}, \texttt{nint}, \texttt{en\_frac}, \texttt{frac\_num}, \texttt{frac\_den}, \texttt{pll\_div\_sel}, \texttt{cp\_current}, \texttt{ref\_doubler}, \texttt{ref\_div2}, and \texttt{use\_ext\_vco} determine how the reference clock is converted into the PLL solution that drives the mixer LO. This grouping is consistent with the public TRF driver, which calculates and programs divider and fractional-N parameters when the mixer frequency is set \cite{artiq_trf_module, trf372017}.
+
+\paragraph{VCO and frequency dividers.}
+Fields such as \texttt{vco\_band}, \texttt{vco\_autocal}, \texttt{lo\_div\_sel}, \texttt{tx\_div\_sel}, \texttt{vco\_bias}, and \texttt{mute\_vco} determine how the internal VCO is selected, calibrated, divided, and biased. This is directly related to the TRF372017 architecture, which uses an integrated VCO with output divider options \cite{trf372017}.
+
+\paragraph{Modulator path.}
+Fields such as \texttt{mod\_gain\_mode}, \texttt{mod\_enable}, \texttt{iqcal\_enable}, \texttt{dc\_offset\_i}, \texttt{dc\_offset\_q}, \texttt{gain\_trim\_i}, \texttt{gain\_trim\_q}, and \texttt{phase\_trim} are used to correct I/Q imbalance, carrier feedthrough, and sideband suppression. This matches the documented role of the TRF modulator and the DAC-side quadrature correction path \cite{dac34h84, trf372017}.
+
+\paragraph{RF and LO output buffers.}
+Fields such as \texttt{lo\_out\_en}, \texttt{lo\_out\_bias}, \texttt{rfout\_en}, \texttt{rfout\_bias}, and \texttt{rfout\_power\_mode} determine how the analog LO and RF output stages are enabled and biased.
+
+\paragraph{Power and control bits.}
+Fields such as \texttt{pd\_all}, \texttt{pd\_pll}, \texttt{pd\_vco}, \texttt{pd\_lo}, \texttt{pd\_tx}, \texttt{pd\_cp}, and \texttt{reset} are used to define startup state, block-specific power-down, and reset behavior.
+
+Taken together, these layers explain why Phaser is useful in quantum-control experiments. The oscillator bank provides multitone structure, the DUC shifts the composite waveform, the DAC and its internal mixer path realize the waveform with interpolation and correction, and the TRF stage places it in the final RF band. The software interface mirrors this structure closely, which is why Phaser can support waveform-rich experimental control without hiding the timing and phase details that still matter physically.

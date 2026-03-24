@@ -1,0 +1,151 @@
+\section{Full Phaser Control Script}
+\label{app:multiseq}
+
+The full ARTIQ control program used for the Phaser interface is included below.
+This listing is provided as an appendix reference for the implementation discussed in Chapter~4.
+
+% Requires in preamble:
+% \usepackage{listings}
+% \usepackage{xcolor}
+% \lstset{basicstyle=\ttfamily\small, breaklines=true, columns=fullflexible, frame=single}
+
+\begin{lstlisting}[language=Python, caption={Full ARTIQ Phaser control program used in this work.}, label={lst:multiseq_full}]
+from artiq.experiment import *
+import kasli.coredevice.phaser
+import numpy as np
+from typing import List
+
+
+class phaserShowcase(EnvExperiment):
+    def build(self):
+        self.setattr_device("core")
+        self.phaser: List[kasli.coredevice.phaser.Phaser] = [self.get_device("phaser0")]
+
+        self.mode = self.get_argument("Mode (0=seq,1=par,2=both)", NumberValue(2, min=0, max=2, step=1))
+        self.gap_time = self.get_argument("Seq gap time", NumberValue(20*us, unit="us", min=0*us, max=100*ms))
+        self.parallel_time = self.get_argument("Parallel burst time", NumberValue(500*us, unit="us", min=0*us, max=10*s))
+
+        self.phaser_en: List[bool] = []
+        self.att: List[List[float]] = [[]]
+        self.carrier_freq: List[List[float]] = [[]]
+
+        self.osc_freq:  List[List[List[float]]] = [[[], []]]   # [i][ch][osc]
+        self.osc_amp:   List[List[List[float]]] = [[[], []]]
+        self.osc_phase: List[List[List[float]]] = [[[], []]]
+        self.seq_time:  List[List[List[float]]] = [[[], []]]    # per-osc sequential duration
+
+        for i in range(1):
+            self.phaser_en.append(self.get_argument(f"Enable Phaser {i}", BooleanValue(False)))
+            for ch in range(2):
+                self.att[i].append(self.get_argument(
+                    f"Phaser {i} Ch {ch} Attenuation",
+                    NumberValue(0.0, unit="dB", min=0, max=31.5)
+                ))
+                self.carrier_freq[i].append(self.get_argument(
+                    f"Phaser {i} Ch {ch} Carrier Frequency",
+                    NumberValue(200*MHz, unit="MHz", min=0*MHz, max=512.5*MHz)
+                ))
+                for k in range(5):
+                    self.osc_freq[i][ch].append(self.get_argument(
+                        f"Phaser {i} Ch {ch} Osc {k} IF Frequency",
+                        NumberValue(0.0, unit="MHz", min=-10*MHz, max=10*MHz)
+                    ))
+                    self.osc_amp[i][ch].append(self.get_argument(
+                        f"Phaser {i} Ch {ch} Osc {k} Amplitude",
+                        NumberValue(0.0, min=0.0, max=1.0)
+                    ))
+                    self.osc_phase[i][ch].append(self.get_argument(
+                        f"Phaser {i} Ch {ch} Osc {k} Phase",
+                        NumberValue(0.0)
+                    ))
+                    self.seq_time[i][ch].append(self.get_argument(
+                        f"Phaser {i} Ch {ch} Osc {k} Seq Duration",
+                        NumberValue(100*us, unit="us", min=0*us, max=10*s)
+                    ))
+
+                amps = [float(a) if a is not None else 0.0 for a in self.osc_amp[i][ch]]
+                if sum(amps) > 1.0:
+                    raise ValueError(
+                        f"The sum of all the oscillator amplitudes in channel {ch} "
+                        f"should be less than 1."
+                    )
+
+    @kernel
+    def _zero_all(self, ch):
+        for k in range(5):
+            ch.oscillator[k].set_amplitude_phase(0.0, phase=0.0, clr=np.int32(0))
+
+    @kernel
+    def _program_parallel(self, ch, amps, freqs, phases):
+        for k in range(5):
+            ch.oscillator[k].set_frequency(freqs[k])
+        delay(50*us)
+        for k in range(5):
+            ch.oscillator[k].set_amplitude_phase(amps[k], phase=phases[k], clr=np.int32(0))
+
+    @kernel
+    def _program_single(self, ch, k, amp, freq, phase):
+        ch.oscillator[k].set_frequency(freq)
+        delay(30*us)
+        ch.oscillator[k].set_amplitude_phase(amp, phase=phase, clr=np.int32(0))
+
+    @kernel
+    def run(self):
+        self.core.reset()
+        delay(1*ms)
+
+        for i in range(1):
+            f = self.phaser[i]
+            if not self.phaser_en[i]:
+                f.set_cfg(dac_sleep=1, trf0_ps=1, trf1_ps=1)
+                continue
+
+            f.init()
+            delay(1*ms)
+
+            for j in range(2):
+                ch = f.channel[j]
+                ch.set_att(self.att[i][j])
+                ch.set_duc_frequency(self.carrier_freq[i][j] - 312.5*MHz)
+                ch.set_duc_cfg(select=0, clr=0)
+                delay(100*us)
+
+                self._zero_all(ch)
+                f.duc_stb()
+                delay(50*us)
+
+                if self.mode == 0 or self.mode == 2:
+                    for k in range(5):
+                        if (self.osc_amp[i][j][k] > 0.0) and (self.seq_time[i][j][k] > 0.0*ns):
+                            self._program_single(ch,
+                                                 k,
+                                                 self.osc_amp[i][j][k],
+                                                 self.osc_freq[i][j][k],
+                                                 self.osc_phase[i][j][k])
+                            f.duc_stb()
+                            delay(self.seq_time[i][j][k])
+                            ch.oscillator[k].set_amplitude_phase(0.0, phase=self.osc_phase[i][j][k], clr=np.int32(0))
+                            f.duc_stb()
+                            delay(self.gap_time)
+
+                if self.mode == 1 or self.mode == 2:
+                    total_amp = 0.0
+                    for k in range(5):
+                        total_amp += self.osc_amp[i][j][k]
+                    if total_amp > 1.0:
+                        raise ValueError("The sum of all the oscillator amplitudes in channel (0 or 1) should be less than 1.")
+
+                    self._program_parallel(ch,
+                                           self.osc_amp[i][j],
+                                           self.osc_freq[i][j],
+                                           self.osc_phase[i][j])
+                    f.duc_stb()
+                    delay(self.parallel_time)
+
+                    for k in range(5):
+                        ch.oscillator[k].set_amplitude_phase(0.0, phase=self.osc_phase[i][j][k], clr=np.int32(0))
+                    f.duc_stb()
+                    delay(50*us)
+
+        self.core.wait_until_mu(now_mu())
+\end{lstlisting}

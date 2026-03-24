@@ -1,38 +1,15 @@
 \chapter{Introduction}
 
-\section{Motivation: deterministic phase-coherent control in trapped-ion experiments}
-Trapped-ion quantum information processing depends on coherent manipulations of qubit states using
-electromagnetic control fields engineered in time, frequency, amplitude, and phase.
-In practice, high-fidelity operations require (i) deterministic timing to align control actions to the experiment
-timeline, and (ii) stable phase relationships between channels that drive optical modulators and microwave/RF
-hardware.
+Quantum computing uses qubits rather than classical bits. Because qubits can exist in superposition states and can become entangled, quantum systems can represent and process information in ways that are not available to classical digital hardware. This difference is the basis for quantum algorithms that can offer substantial speedups for specific problems, such as integer factorization \cite{nielsen_chuang,shor1994}.
 
-This thesis focuses on the signal-generation and timing-control layer required to support such experiments,
-with emphasis on ARTIQ’s real-time execution model and the Phaser AWG module.
+Trapped ions are one of the most established physical platforms for quantum computing. In this approach, individual ions are confined by electromagnetic fields and quantum information is encoded in long-lived internal atomic states. The early proposal by Cirac and Zoller showed that a system of cold trapped ions could realize quantum computation by coupling internal states through collective motional modes \cite{cirac_zoller_1995}. Later reviews explain why trapped ions remain a leading platform: they offer very good coherence properties, precise state preparation and readout, and high-fidelity gate operations \cite{wineland1998,haffner2008,bruzewicz2019}.
 
-\section{Contributions}
-This master’s project contributes an implementation and validation framework for Phaser-based RF control.
-Unlike a purely descriptive hardware report, the emphasis is on the system-level mapping from experimental
-requirements to timing semantics, device configuration, and validation.
+In trapped-ion systems, quantum logic is implemented through controlled interactions between the ions and externally applied electromagnetic fields, most often laser fields. Single-qubit gates are typically realized as coherent rotations between two selected internal states of an ion. Two-qubit entangling gates are obtained by coupling the internal states to shared motional modes of the ion chain. A common example is the M{\o}lmer--S{\o}rensen gate, which has become one of the standard entangling gates in trapped-ion experiments. Together with arbitrary single-qubit rotations, such an entangling gate provides a universal gate set for quantum computation \cite{molmer_sorensen_1999,bruzewicz2019,wineland1998}.
 
-% TODO: Replace the bracketed items with your specifics:
-The contributions are:
-\begin{itemize}[leftmargin=*]
-  \item A multitone output capability for Phaser suitable for [AOM/AOD] tasks requiring multiple simultaneous
-        frequency components.
-  \item A precision phase-control approach that defines a phase reference, handles phase updates, and outlines
-        calibration of deterministic offsets.
-  \item An experiment-facing interface layer that reduces the burden of device configuration and improves
-        reproducibility through structured metadata and validation hooks.
-\end{itemize}
+A practical trapped-ion experiment therefore depends not only on the physics of the ions themselves, but also on the quality of the control hardware that prepares and applies the driving fields. In many laboratories, laser beams are controlled with acousto-optic modulators (AOMs). An AOM contains a crystal driven by a radio-frequency signal. The applied RF signal launches an acoustic wave in the crystal, which creates a moving refractive-index grating through the photoelastic effect. Incident laser light is then diffracted by this grating. In this way, the RF frequency determines the optical frequency shift and beam deflection behavior, while the RF power controls diffraction efficiency and therefore optical intensity \cite{isomet_aomod,isomet_aohome,isomet_aofs}. This makes the RF control chain a direct part of the quantum control system rather than a separate supporting subsystem.
 
-\section{Document structure}
-Chapter~\ref{ch:quantum_background} provides a concise background on trapped-ion quantum computing and RF-driven
-optical modulators. Chapter~\ref{ch:artiq_architecture} summarizes ARTIQ’s host/kernel model and RTIO timing.
-Chapter~\ref{ch:phaser_vs_urukul} compares Phaser and Urukul and discusses DDS vs AWG tradeoffs.
-Chapter~\ref{ch:phaser_internals} details Phaser internal blocks (NCO/PLL/DAC and sync).
-Chapters~\ref{ch:system_design}--\ref{ch:results_validation} describe implementation and validation templates,
-followed by discussion and future work.
+For this reason, the requirements on RF signal generation in trapped-ion experiments are demanding. Quantum gates and calibration routines require accurate control of frequency, amplitude, phase, and timing. Phase noise, timing jitter, or poorly synchronized updates in the RF path can directly degrade optical control and reduce gate fidelity. In addition, many modern experiments require more than a single clean tone: they may need multitone signals, shaped pulses, fast switching, and phase-coherent updates across channels. These requirements motivate the use of dedicated real-time experimental control systems that can combine deterministic timing with flexible RF waveform generation \cite{bruzewicz2019,wineland1998}.
 
-% Labels
+This thesis is concerned with that control layer. In particular, it studies RF signal generation and control for quantum experiments in the ARTIQ ecosystem, with emphasis on hardware and software mechanisms that support deterministic timing, precise phase control, and flexible waveform synthesis. The discussion begins with the general quantum-computing and trapped-ion background needed to motivate these requirements, and then moves to the role of RF-driven AOM control as an interface between the experimental control system and the physical qubits.
+
 \label{ch:introduction}

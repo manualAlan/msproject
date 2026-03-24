@@ -16,114 +16,312 @@
   howpublished = {Overleaf template},
 }
 
-@manual{artiq_manual,
-  title        = {ARTIQ Documentation},
+@book{nielsen_chuang,
+  author    = {Michael A. Nielsen and Isaac L. Chuang},
+  title     = {Quantum Computation and Quantum Information},
+  publisher = {Cambridge University Press},
+  year      = {2000}
+}
+
+@inproceedings{shor1994,
+  author    = {Peter W. Shor},
+  title     = {Algorithms for Quantum Computation: Discrete Logarithms and Factoring},
+  booktitle = {Proceedings 35th Annual Symposium on Foundations of Computer Science},
+  pages     = {124--134},
+  year      = {1994},
+  doi       = {10.1109/SFCS.1994.365700}
+}
+
+@article{cirac_zoller_1995,
+  author  = {J. I. Cirac and P. Zoller},
+  title   = {Quantum Computations with Cold Trapped Ions},
+  journal = {Physical Review Letters},
+  volume  = {74},
+  number  = {20},
+  pages   = {4091--4094},
+  year    = {1995},
+  doi     = {10.1103/PhysRevLett.74.4091}
+}
+
+@article{wineland1998,
+  author  = {D. J. Wineland and C. Monroe and W. M. Itano and D. Leibfried and B. E. King and D. M. Meekhof},
+  title   = {Experimental Issues in Coherent Quantum-State Manipulation of Trapped Atomic Ions},
+  journal = {Journal of Research of the National Institute of Standards and Technology},
+  volume  = {103},
+  number  = {3},
+  pages   = {259--328},
+  year    = {1998},
+  doi     = {10.6028/jres.103.019}
+}
+
+@article{haffner2008,
+  author  = {Hartmut H{\"a}ffner and Christian F. Roos and Rainer Blatt},
+  title   = {Quantum Computing with Trapped Ions},
+  journal = {Physics Reports},
+  volume  = {469},
+  number  = {4},
+  pages   = {155--203},
+  year    = {2008},
+  doi     = {10.1016/j.physrep.2008.09.003}
+}
+
+@article{bruzewicz2019,
+  author  = {Colin D. Bruzewicz and John Chiaverini and Robert McConnell and Jeremy M. Sage},
+  title   = {Trapped-ion Quantum Computing: Progress and Challenges},
+  journal = {Applied Physics Reviews},
+  volume  = {6},
+  number  = {2},
+  pages   = {021314},
+  year    = {2019},
+  doi     = {10.1063/1.5088164}
+}
+
+@article{molmer_sorensen_1999,
+  author  = {Anders S{\o}rensen and Klaus M{\o}lmer},
+  title   = {Quantum Computation with Ions in Thermal Motion},
+  journal = {Physical Review Letters},
+  volume  = {82},
+  number  = {9},
+  pages   = {1971--1974},
+  year    = {1999},
+  doi     = {10.1103/PhysRevLett.82.1971}
+}
+
+@misc{isomet_aomod,
+  author       = {{Isomet}},
+  title        = {AO Modulators},
+  howpublished = {\url{https://isomet.com/acousto_optic_modulators.html}},
+  note         = {Accessed: 2026-03-24}
+}
+
+@misc{isomet_aohome,
+  author       = {{Isomet}},
+  title        = {Acousto-Optics},
+  howpublished = {\url{https://isomet.com/aohome.html}},
+  note         = {Accessed: 2026-03-24}
+}
+
+@misc{isomet_aofs,
+  author       = {{Isomet}},
+  title        = {Frequency Shifters},
+  howpublished = {\url{https://isomet.com/acousto_optic_frequency_shifters_home.html}},
+  note         = {Accessed: 2026-03-24}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+@manual{artiq_rtio,
   author       = {{M-Labs}},
+  title        = {ARTIQ Real-Time I/O Concepts},
   year         = {2026},
-  note         = {ARTIQ manual},
+  url          = {https://m-labs.hk/artiq/manual/rtio.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{mlabs_phaser_datasheet_2025,
-  title        = {4624 {AWG} Phaser Datasheet},
+@manual{artiq_drivers,
   author       = {{M-Labs}},
-  year         = {2025},
-  note         = {Sinara datasheet},
+  title        = {Core Real-Time Drivers Reference},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/core_drivers_reference.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{mlabs_urukul_datasheet_2025,
-  title        = {4410/4412 {DDS} Urukul Datasheet},
+@manual{artiq_ad9910,
   author       = {{M-Labs}},
+  title        = {ARTIQ AD9910 Coredevice Driver Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/_modules/artiq/coredevice/ad9910.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{artiq_phaser_classic,
+  author       = {{M-Labs}},
+  title        = {ARTIQ Phaser Coredevice Driver Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-beta/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{artiq_phaser_legacy,
+  author       = {{M-Labs}},
+  title        = {ARTIQ Legacy Phaser Driver Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-legacy/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{urukul_datasheet,
+  author       = {{M-Labs}},
+  title        = {4410/4412 DDS Urukul Datasheet},
   year         = {2025},
-  note         = {Sinara datasheet},
+  url          = {https://m-labs.hk/docs/sinara-datasheets/4410-4412.pdf},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{ti_dac34h84,
-  title        = {{DAC34H84} Quad-Channel, 16-Bit, 1.25 {GSPS} {DAC} Datasheet},
+@manual{phaser_datasheet,
+  author       = {{M-Labs}},
+  title        = {4624 AWG Phaser Datasheet},
+  year         = {2025},
+  url          = {https://m-labs.hk/docs/sinara-datasheets/4624.pdf},
+  note         = {Accessed: 2026-03-24}
+}
+
+@misc{sinara_core,
+  author       = {{M-Labs}},
+  title        = {Sinara Core Hardware Overview},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/sinara-core/},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{dac34h84_datasheet,
   author       = {{Texas Instruments}},
-  year         = {2015},
+  title        = {DAC34H84 Quad-Channel, 16-Bit, 1.25-GSPS Interpolating DAC},
+  year         = {2026},
+  url          = {https://www.ti.com/product/DAC34H84},
+  note         = {Accessed: 2026-03-24}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%2
+@manual{artiq_phaser_driver,
+  author       = {{M-Labs}},
+  title        = {artiq.coredevice.phaser --- ARTIQ beta documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-beta/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{ti_trf372017,
-  title        = {{TRF372017} Integrated {IQ} Modulator {PLL/VCO} Datasheet},
+@manual{artiq_phaser_legacy,
+  author       = {{M-Labs}},
+  title        = {artiq.coredevice.phaser --- ARTIQ legacy documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-legacy/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{phaser_datasheet,
+  author       = {{M-Labs}},
+  title        = {4624 AWG Phaser Datasheet},
+  year         = {2025},
+  url          = {https://m-labs.hk/docs/sinara-datasheets/4624.pdf},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{dac34h84_datasheet,
   author       = {{Texas Instruments}},
-  year         = {2010},
+  title        = {DAC34H84 Quad-Channel, 16-Bit, 1.25-GSPS, 1x--16x Interpolating DAC},
+  year         = {2026},
+  url          = {https://www.ti.com/product/DAC34H84},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{adi_ltc2323,
-  title        = {{LTC2323-16} Dual, 16-Bit, 5 {MSPS} Differential Input {ADC} Datasheet},
-  author       = {{Analog Devices}},
-  year         = {2017},
+@manual{trf372017_datasheet,
+  author       = {{Texas Instruments}},
+  title        = {TRF372017 300 MHz to 4.8 GHz Quadrature Modulator with Integrated PLL/VCO},
+  year         = {2026},
+  url          = {https://www.ti.com/product/TRF372017},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{adi_ad9910,
-  title        = {{AD9910} 1 {GSPS}, 14-Bit, 3.3 V {CMOS} Direct Digital Synthesizer Datasheet},
+@manual{adi_dds_tutorial,
   author       = {{Analog Devices}},
-  year         = {2016},
-}
-
-@manual{adi_ad9912,
-  title        = {{AD9912} Direct Digital Synthesizer Datasheet},
-  author       = {{Analog Devices}},
-  year         = {2016},
-}
-
-@manual{adi_mt085_dds,
-  title        = {{MT-085}: Fundamentals of Direct Digital Synthesis ({DDS})},
-  author       = {{Analog Devices}},
+  title        = {MT-085: Fundamentals of Direct Digital Synthesis (DDS)},
   year         = {2009},
+  url          = {https://www.analog.com/media/en/training-seminars/tutorials/MT-085.pdf},
+  note         = {Accessed: 2026-03-24}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%3
+@manual{artiq_rtio,
+  author       = {{M-Labs}},
+  title        = {ARTIQ Real-Time I/O Concepts},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/rtio.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@manual{adi_mt086_pll,
-  title        = {{MT-086}: Fundamentals of Phase Locked Loops ({PLLs})},
+@manual{artiq_coredrivers,
+  author       = {{M-Labs}},
+  title        = {Core Real-Time Drivers --- ARTIQ Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/core_drivers_reference.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{artiq_phaser_module,
+  author       = {{M-Labs}},
+  title        = {artiq.coredevice.phaser --- ARTIQ Module Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-beta/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{artiq_trf_module,
+  author       = {{M-Labs}},
+  title        = {artiq.coredevice.trf372017 --- ARTIQ Module Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-beta/_modules/artiq/coredevice/trf372017.html},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{phaser_datasheet,
+  author       = {{M-Labs}},
+  title        = {4624 AWG Phaser Datasheet},
+  year         = {2025},
+  url          = {https://m-labs.hk/docs/sinara-datasheets/4624.pdf},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{dac34h84,
+  author       = {{Texas Instruments}},
+  title        = {DAC34H84 Quad-Channel, 16-Bit, 1.25-GSPS Interpolating DAC},
+  year         = {2026},
+  url          = {https://www.ti.com/product/DAC34H84},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{trf372017,
+  author       = {{Texas Instruments}},
+  title        = {TRF372017 300 MHz to 4.8 GHz Quadrature Modulator with Integrated PLL/VCO},
+  year         = {2026},
+  url          = {https://www.ti.com/product/TRF372017},
+  note         = {Accessed: 2026-03-24}
+}
+
+@manual{adi_mt085,
   author       = {{Analog Devices}},
+  title        = {MT-085: Fundamentals of Direct Digital Synthesis (DDS)},
   year         = {2009},
+  url          = {https://www.analog.com/media/en/training-seminars/tutorials/MT-085.pdf},
+  note         = {Accessed: 2026-03-24}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%4
+@manual{artiq_rtio,
+  author       = {{M-Labs}},
+  title        = {ARTIQ Real-Time I/O Concepts},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/rtio.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@article{sorensen_molmer_1999_prl,
-  title        = {Quantum Computation with Ions in Thermal Motion},
-  author       = {S{\o}rensen, Anders and M{\o}lmer, Klaus},
-  journal      = {Physical Review Letters},
-  year         = {1999},
-  volume       = {82},
-  number       = {9},
-  pages        = {1971--1974},
-  doi          = {10.1103/PhysRevLett.82.1971},
+@manual{artiq_coredrivers,
+  author       = {{M-Labs}},
+  title        = {Core Real-Time Drivers --- ARTIQ Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual/core_drivers_reference.html},
+  note         = {Accessed: 2026-03-24}
 }
 
-@article{haeffner_2008_review,
-  title        = {Quantum computing with trapped ions},
-  author       = {H{\"a}ffner, Hartmut and Roos, Christian F. and Blatt, Rainer},
-  journal      = {Physics Reports},
-  year         = {2008},
-  volume       = {469},
-  number       = {4},
-  pages        = {155--203},
+@manual{artiq_phaser_module,
+  author       = {{M-Labs}},
+  title        = {artiq.coredevice.phaser --- ARTIQ Module Documentation},
+  year         = {2026},
+  url          = {https://m-labs.hk/artiq/manual-beta/_modules/artiq/coredevice/phaser.html},
+  note         = {Accessed: 2026-03-24}
 }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-@article{bruzewicz_2019_apr,
-  title        = {Trapped-ion quantum computing: Progress and challenges},
-  author       = {Bruzewicz, Colin D. and Chiaverini, John and McConnell, Robert and Sage, Jeremy M.},
-  journal      = {Applied Physics Reviews},
-  year         = {2019},
-  volume       = {6},
-  number       = {2},
-  pages        = {021314},
-}
-
-@manual{isomet_aom_modulation,
-  title        = {Acousto-Optic Modulation (Application Note)},
-  author       = {{Isomet Corporation}},
-  year         = {2013},
-}
-
-@manual{keysight_phase_coherence_terms,
-  title        = {Phase Coherence: Terminology (Application Note)},
-  author       = {{Keysight Technologies}},
-  year         = {2020},
-}
-
-@manual{tektronix_awg_vs_dds,
-  title        = {Understanding Signal Generation Methodologies: {AWG} and {DDS} Architectures},
-  author       = {{Tektronix}},
-  year         = {2006},
+@mastersthesis{kofler2025,
+  author = {Jakob Kofler},
+  title  = {Modulated Gates for Improved Ion Control},
+  school = {University of Innsbruck},
+  year   = {2025},
+  url    = {https://quantumoptics.at/images/publications/diploma/master_Kofler.pdf},
+  note   = {Accessed: 2026-03-24}
 }

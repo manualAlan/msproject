@@ -1,72 +1,21 @@
-% =========================
-% chapters/05_phaser_internals.tex
-% =========================
-\chapter{Phaser Internals: How NCO, PLL, and DAC Enable Real-Time Waveform Control}
-\label{ch:phaser_internals}
+\section{Potential Applications of Phaser in Quantum Experimental Control}
 
-\section{System-level block diagram}
-This section describes Phaser as a signal chain: FPGA-defined waveform generation and control, digital
-interpolation and mixing, high-speed DAC conversion, and (optionally) RF upconversion via an integrated IQ
-modulator. The key goal is to connect programmer-visible abstractions (oscillators, DUC frequency, amplitude
-and phase words) to underlying hardware blocks (NCO/PLL/DAC).
+Due to time constraints of this project, the tests presented in the previous section were intentionally simple, but the value of Phaser is not limited to demonstrating single tones, multitone output, or relative phase control. The more important point is that these basic operations can be combined into a control layer that supports a broader class of quantum experiments. According to the Phaser datasheet, the hardware is intended for applications including driving acousto-optic deflectors (AODs), driving acousto-optic modulators (AOMs), driving RF electrodes in ion traps\cite{phaser_datasheet}. These applications are not separate from quantum control. They correspond directly to some of the main interfaces through which a trapped-ion experiment applies electromagnetic control fields to the physical system.
 
-\begin{figure}[t]
-  \centering
-  \draftfigure[0.98\linewidth]{figures/phaser_signal_chain.pdf}
-  \caption{Placeholder: Phaser signal chain diagram summarizing the FPGA, DAC, synchronization, and optional
-  upconversion path.}
-  \label{fig:phaser_signal_chain}
-\end{figure}
+One natural application is more flexible AOM control. In many experiments, an AOM is not used only as a binary optical switch. It is also used to shift optical frequency, control intensity, and, in more complex optical arrangements, address more than one spectral component or beam condition at the same time. Because Phaser can synthesize several tones on one channel and can update their amplitudes and phases under deterministic timing, it is well suited to experiments that require bichromatic or multitone RF drive, controlled pulse envelopes, or phase-related beam control. This is especially relevant in trapped-ion experiments, where coherent operations often depend on maintaining a controlled relationship between several frequency components rather than only turning one tone on and off \cite{artiq_coredrivers, bruzewicz2019, kofler2025}.
 
-\section{Numerically controlled oscillators in Phaser}
-Phaser exposes oscillator-style control in ARTIQ drivers. At the implementation level, the control maps to
-frequency tuning words (FTWs), phase offset words (POWs), and amplitude scale factors (ASFs).
+A second important application is in waveform-shaped gate control. The trapped-ion literature has shown that gate fidelity depends not only on carrier frequency and pulse duration, but also on how the control waveform is shaped in time and in frequency \cite{bruzewicz2019}. In a recent thesis on modulated trapped-ion gates, Phaser was explicitly used because AWG-like signal generation was needed for amplitude-modulated gate schemes and because integration into the existing ARTIQ control system was important \cite{kofler2025}. In that context, Phaser is attractive because it sits between two extremes. It is more flexible than a standard DDS board, but it is more naturally integrated into real-time quantum experimental control than an external laboratory AWG. This makes it a practical platform for shaped entangling-gate pulses, bichromatic drives, and other modulation schemes in which waveform structure itself becomes part of the gate design.
 
-\subsection{NCO fundamentals (short, thesis-ready)}
-An NCO generates a discrete-time sinusoid by accumulating phase:
-\[
-\phi[n+1] = \phi[n] + \Delta \phi \pmod{2\pi},
-\]
-where $\Delta \phi$ is set by the FTW and the reference clock. The output sine/cosine is produced via lookup or
-CORDIC. In practice, finite word lengths set frequency resolution, and clock phase noise/jitter maps into output
-phase noise.
+Taken together, these potential applications show that Phaser is most useful when the experiment requires more than a conventional one-tone RF source. Its main strength is not simply that it produces RF output, but that it combines multitone synthesis, phase control, digital upconversion, deterministic timing, and software integration inside the ARTIQ framework. This makes it a good fit for quantum experiments in which waveform structure, synchronization, and reproducibility matter at the same time.
 
-% TODO: cite your chosen fundamental source in BibTeX:
-% \cite{adi_mt085_dds,tierney_1971_dds}
+\section{Conclusion}
 
-\subsection{Phaser-specific frequency domains}
-ARTIQ’s Phaser multitone oscillator model documents a passband around the DUC (e.g., approximately
-$\pm 10$~MHz), while the DAC NCO mixer path supports a much wider passband (e.g., $\pm 400$~MHz, wrapping
-near $\pm 500$~MHz). The practical meaning is that “oscillator frequency” and “DAC NCO frequency” refer to
-distinct digital mixing stages and therefore have different constraints.
+This thesis studied the use of Phaser as a real-time RF control platform for quantum experiments in the ARTIQ ecosystem. The work began with the experimental and physical motivation for precise RF control in trapped-ion systems, especially in applications involving AOM-based optical manipulation. It then examined the ARTIQ control framework and the distinction between Urukul and Phaser, showing that the main difference is not only one of specifications, but one of control style: Urukul is well suited to simple and mature single-tone RF generation, while Phaser is better suited to waveform-rich and multitone experimental control \cite{artiq_rtio, urukul_datasheet, phaser_datasheet}.
 
-% TODO: Insert a figure showing your chosen operating mode (classic vs MIQRO vs MTDDS) and where tones live.
+The internal signal path of Phaser was then analyzed in terms of its main functional layers: the digital oscillator bank, interpolation and digital upconversion, DAC-side processing, PLL-based clocking and upconversion, and the software structure exposed by ARTIQ. This analysis showed that Phaser should be understood as a layered RF synthesis pipeline rather than as a simple frequency source. That layered structure is what enables the board to support phase-coherent multitone output, waveform shaping, and deterministic timing under kernel control \cite{artiq_coredrivers, artiq_phaser_module, dac34h84, trf372017}.
 
-\section{PLL roles: clock multiplication and LO synthesis}
-Two PLL roles are relevant in Phaser-like architectures:
-(i) clock multiplication/jitter filtering for the DAC clock domain, and
-(ii) LO synthesis for the IQ upconverter (when used). PLL behavior sets the phase-noise floor and determines
-how reference clock quality propagates to the RF output.
+On the implementation side, several programming tasks were developed and tested. A single-frequency test verified the basic signal path. A multitone test demonstrated that one channel could generate more than one frequency simultaneously. A two-channel phase test showed that controlled relative phase offsets could be realized consistently. Finally, a dashboard-based interface was written to expose per-channel attenuation and carrier settings together with per-oscillator frequency, amplitude, and phase control for both channels. This interface made it possible to use Phaser in a more practical experimental way, rather than only through isolated low-level tests.
 
-\subsection{DAC clock PLL}
-The DAC34H84 includes a clock-multiplying PLL and multi-device synchronization support; these features help
-build a coherent multi-channel DAC system provided the reference clock and sync strategy are well defined.
+The main conclusion of this work is that Phaser extends the types of RF control that can be implemented conveniently inside ARTIQ. Its value is not only higher flexibility in signal generation, but also the fact that this flexibility remains tied to deterministic timing and an experiment-oriented software framework. For quantum experiments that require only a few stable RF tones, simpler hardware may still be sufficient. But for experiments that require multitone outputs, phase-structured control, shaped pulses, or more complex synchronized RF waveforms, Phaser provides a significantly more suitable platform.
 
-\subsection{Upconverter PLL/VCO}
-In the upconverter variant, TRF372017 provides an integrated PLL/VCO and IQ modulator with LO frequency
-from 300~MHz to 4.8~GHz. This enables high-frequency RF outputs while keeping baseband generation digital.
-
-\section{DAC behavior: interpolation, mixing, and synchronization}
-The DAC stage maps digital samples into continuous-time waveforms; reconstruction filtering and interpolation
-settings define spectral images, bandwidth, and spurious behavior. Multi-device sync features are critical for
-repeatable channel alignment.
-
-\subsection{Interpolation and spectral images}
-% TODO: Insert a short explanation with one “spectrum sketch” figure and a real measurement later.
-
-\subsection{Multi-channel synchronization model}
-This thesis distinguishes:
-1) digital-time alignment (RTIO scheduling),
-2) digital-domain phase coherence (shared NCO reference time),
-3) DAC update synchronization (register update triggers),
-4) analog-domain alignment (cable delays, mixers, amplifiers).
+Future work can build on this foundation in several directions. One direction is deeper use of shaped or modulated gate waveforms. Another is integration of feedback and servo capabilities using the available ADC and newer ARTIQ support. A further direction is development of higher-level software abstractions that make complex Phaser sequences easier to specify while preserving explicit timing and phase control. 
