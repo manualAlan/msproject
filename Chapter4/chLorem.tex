@@ -59,6 +59,7 @@ Although this test is simpler than a fully shaped pulse, it is still useful beca
 \subsection{Full user interface for two-channel Phaser control}
 
 After the individual tests above were completed, a more complete user interface was written so that the useful parts of Phaser could be accessed directly from the ARTIQ dashboard. The final experiment was implemented as the class \texttt{phaserShowcase}, and it was designed to use both Phaser channels while exposing the main control parameters in a simple experimental interface.
+The full source listing for this interface is included in Appendix~\ref{app:multiseq} so that the implementation can be read alongside the experimental discussion in this chapter.
 
 At the highest level, the interface supports three operating modes: sequential output, parallel output, and a combined mode that performs both. It also exposes global timing controls such as the gap between sequential bursts and the duration of the parallel burst. For each channel, the user can set attenuation and carrier frequency. In addition, each of the five oscillators on each channel has its own frequency, amplitude, phase, and sequential duration setting. This gives full per-tone control while still keeping the interface manageable from the dashboard.
 

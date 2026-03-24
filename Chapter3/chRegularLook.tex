@@ -2,6 +2,15 @@
 
 Phaser is useful in quantum experiments because it does not treat RF generation as a single-tone problem. Instead, it implements a layered signal path in which several digital tones can be generated, combined, frequency-shifted, phase-adjusted, converted to analog, and, in the upconverter variant, translated again to a higher RF band. In the standard ARTIQ base mode, the core device produces two IQ data streams at 25~MS/s, and each stream contains five independent oscillators with 32-bit frequency control, 16-bit phase control, and 15-bit amplitude control \cite{artiq_phaser_module, artiq_coredrivers}. These oscillators are added together before later interpolation and upconversion stages. This is the main reason Phaser is useful for waveform-rich control: one output can carry a structured multitone signal rather than only one sinusoidal carrier.
 
+Figure~\ref{fig:phaser_board_annotated} shows the annotated Phaser board used in this work and highlights the main hardware blocks discussed in this chapter. Seeing the FPGA, DAC, and upconversion hardware on the physical board helps connect the ARTIQ software abstractions to the actual signal path implemented by the hardware.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.95\linewidth]{Pictures/phaser_board.png}
+    \caption{Annotated Phaser board showing the Xilinx Artix-7 FPGA, the TI DAC34H84 high-speed DAC, and the TRF372017 PLL/IQ modulator. This board-level view provides a physical reference for the functional layers discussed in this chapter.}
+    \label{fig:phaser_board_annotated}
+\end{figure}
+
 \subsection{Digital oscillators and multitone synthesis}
 
 The first stage is the oscillator bank inside each \texttt{PhaserChannel}. In ARTIQ, each \texttt{PhaserOscillator} provides the methods \texttt{set\_frequency()} and \texttt{set\_amplitude\_phase()} \cite{artiq_coredrivers}. The documented passband for the oscillator frequency in base mode is from \(-10\)~MHz to \(+10\)~MHz, with wrapping at \(\pm 12.5\)~MHz \cite{artiq_coredrivers}. The phase argument is given in turns, and the amplitude is specified in units of full scale \cite{artiq_coredrivers}. This is a natural software model for quantum control. One oscillator can be used for a simple AOM tone, while several oscillators can be summed to generate bichromatic or multitone signals with fixed phase relationships.
