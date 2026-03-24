@@ -1,4 +1,4 @@
-\section{Phaser Internal Architecture and Software Interface}
+\chapter{Phaser Internal Architecture and Software Interface}
 
 Phaser is useful in quantum experiments because it does not treat RF generation as a single-tone problem. Instead, it implements a layered signal path in which several digital tones can be generated, combined, frequency-shifted, phase-adjusted, converted to analog, and, in the upconverter variant, translated again to a higher RF band. In the standard ARTIQ base mode, the core device produces two IQ data streams at 25~MS/s, and each stream contains five independent oscillators with 32-bit frequency control, 16-bit phase control, and 15-bit amplitude control \cite{artiq_phaser_module, artiq_coredrivers}. These oscillators are added together before later interpolation and upconversion stages. This is the main reason Phaser is useful for waveform-rich control: one output can carry a structured multitone signal rather than only one sinusoidal carrier.
 
